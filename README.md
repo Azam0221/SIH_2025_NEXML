@@ -82,22 +82,18 @@ This pipeline handles user queries and fetches relevant information from the ing
 
 ### Setup
 
+1. **Create and activate virtual environment using `uv`:**
 
-setup uv
+   ```bash
+   uv venv
+   source .venv/bin/activate
+   uv pip install -r requirements.txt
+   ```
 
-uv venv
-
-source .venv/bin/activate
-
-uv pip install -r requirements.txt
-
-
-
-In .env file
-
-setup
-
-GROQ_API_KEY
-NEO4J_URI
-NEO4J_USERNAME
-NEO4J_PASSWORD
+2. **Create a .env file in the project root with the following:**
+   ```
+      GROQ_API_KEY=your_groq_api_key
+      NEO4J_URI=your_neo4j_uri   
+      NEO4J_USERNAME=your_username
+      NEO4J_PASSWORD=your_password
+   ```

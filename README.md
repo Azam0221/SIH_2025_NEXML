@@ -78,3 +78,22 @@ This pipeline handles user queries and fetches relevant information from the ing
 4. Objective Evaluation Score Generation:
     - For this I am think we can send content of the repo,the novelty assessment and also the financial reposr. Also we should compare the current proposal somehow with the rest of the proposals and generate relative evaluation scores. This will be better than arbitrary scores I think. Though we will have to decide how to actually go about this one.
 
+
+
+### Setup
+
+1. **Create and activate virtual environment using `uv`:**
+
+   ```bash
+   uv venv
+   source .venv/bin/activate
+   uv pip install -r requirements.txt
+   ```
+
+2. **Create a .env file in the project root with the following:**
+   ```
+      GROQ_API_KEY=your_groq_api_key
+      NEO4J_URI=your_neo4j_uri   
+      NEO4J_USERNAME=your_username
+      NEO4J_PASSWORD=your_password
+   ```

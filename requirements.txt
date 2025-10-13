@@ -1,0 +1,6 @@
+pandas
+langchain-core
+langchain-experimental
+langchain-groq
+langchain-community
+neo4j

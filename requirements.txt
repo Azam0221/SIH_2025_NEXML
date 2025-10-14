@@ -4,3 +4,6 @@ langchain-experimental
 langchain-groq
 langchain-community
 neo4j
+sentence-transformers
+chromadb
+langchain-huggingface

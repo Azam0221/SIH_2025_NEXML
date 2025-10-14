@@ -1,55 +1,63 @@
 import pandas as pd
 import os
 from langchain_core.documents import Document
-from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_groq import ChatGroq
-from langchain_community.graphs import Neo4jGraph
 from dotenv import load_dotenv
-
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from proposal import proposal
 load_dotenv()
 
 
 groq_api_key = os.getenv("GROQ_API_KEY")
-NEO4J_URI = os.getenv("NEO4J_URI")
-NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+
 
 if not groq_api_key:
     raise ValueError("GROQ_API_KEY not found in .env file or environment variables.")
 
-df = pd.read_csv('naccer_proposals_100_cleaned.csv')
+embedding_model = HuggingFaceEmbeddings(model_name = "models/local_all-MiniLM-L6-v2")
 
-documents = []
-for index, row in df.iterrows():
-    page_content = (
-        f"Proposal Title: {row['Title']}\n"
-        f"Principal Investigator: {row['PI_Name']}\n"
-        f"Institution: {row['Institution']}\n"
-        f"Research Area: {row['Research_Area']}\n"
-        f"Keywords: {row['Keywords']}\n"
-        f"Abstract: {row['Abstract']}"
-    )
+vectorstore = Chroma(   
+    persist_directory="./chromaDB",
+    embedding_function=embedding_model,
+    collection_name="proposal_collection"  # same name as before
+)
+retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
 
-    doc = Document(page_content=page_content, metadata={"proposal_id": row['Proposal_ID']})
-    documents.append(doc)
 
-llm = ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-8b-instant")
+vectorstore_guidelines = Chroma(   
+    persist_directory="./GuidelinesDB",
+    embedding_function=embedding_model,
+    collection_name="guidelines_collection"  # same name as before
+)
+retriever_guidelines = vectorstore_guidelines.as_retriever()
 
-llm_transformer = LLMGraphTransformer(llm=llm)
+llm = ChatGroq(groq_api_key=groq_api_key,
+               model_name="llama-3.1-8b-instant",
+               max_tokens = 4096)
 
-print("LLM and LLMGraphTransformer have been initialized.")
 
-test_documents = documents[:5]
+rag_chain = RetrievalQA.from_chain_type(llm=llm, 
+                                        retriever=retriever_guidelines,
+                                        chain_type="map_reduce", 
+                                        return_source_documents=True)  # Optional: useful for debugging
 
-graph_documents = llm_transformer.convert_to_graph_documents(test_documents)
-first_graph_doc = graph_documents[0]
+query = f"""
+    my proposal is {proposal}
+    You are an expert reviewer working for the Nodal Agency (CMPDI) under the Ministry of Coal. Your task is to conduct a meticulous and thorough compliance audit of the provided research proposal against the official 'GUIDELINES FOR RESEARCH PROJECTS OF MINISTRY OF COAL.
+    
+"""
 
-print("\n--- Example Extracted Graph ---")
-print("Nodes:")
-for node in first_graph_doc.nodes:
-    print(f"  - {node}")
+# response = rag_chain.run(query)
+# print("🔎 Answer:", response)
 
-print("\nRelationships:")
-for rel in first_graph_doc.relationships:
-    print(f"  - {rel}")
-print("-----------------------------\n")
+
+response = rag_chain.invoke({"query": query})
+
+
+
+print(response["result"])  # The answer text
+print('--------------------------------------------------------')
+print(response["source_documents"]) # List of source documents
+print(len(response["source_documents"]))

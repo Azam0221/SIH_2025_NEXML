@@ -24,17 +24,20 @@ for item in tqdm(data):
     query = f"{item["question"]}"
     response = rag_chain.invoke({"query": query})
     best_docs = cross_encoder_rerank(query=query, documents=response["source_documents"], top_k = 2)
-    item["contexts"]="".join([doc.page_content for doc in best_docs])
+    item["contexts"]=[doc.page_content for doc in best_docs]
     reranked_retriever = StaticRetriever(docs=best_docs, k=2)
     best_rag_chain = RetrievalQA.from_chain_type(llm=llm, 
                                                 retriever=reranked_retriever,
                                                 chain_type="stuff",  
                                                 return_source_documents=False) 
     best_response = best_rag_chain.invoke({"query": query})
-    item["answer"] = best_response
+    
+    for key, val in best_response.items():
+        if key=='result':
+            item['answer'] = val
+    
 
-
-with open('ragas_eval_filled.json', 'w') as f:
+with open('data/ragas_eval_filled.json', 'w') as f:
     json.dump(data, f, indent=4)
         
 
